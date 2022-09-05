@@ -76,7 +76,7 @@ internal object StateMachineValidator {
     private fun <S : Any, E : Any> hasSingleInitialState(transitions: List<Connection<S, E, *>>) {
         val initialStates: Int = transitions.count { it is Connection.Initial }
         validate(initialStates != 0) { "No initial state was found" }
-        validate(initialStates == 1) { "More than initial state was found" }
+        validate(initialStates == 1) { "More than one initial state was found" }
     }
 
     /**
