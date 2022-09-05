@@ -13,9 +13,5 @@ jobs:
           java-version: '11'
           distribution: 'adopt'
           architecture: x64
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v1
-      - name: Generate Kotlin code
-        run: make generate
       - name: Run tests
         run: make test
