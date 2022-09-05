@@ -48,7 +48,7 @@ publishing {
     publications {
         register<MavenPublication>("gpr") {
             groupId = "io.nexure"
-            artifactId = "payment-message"
+            artifactId = "fsm"
             version = project.findProperty("versionId") as String?
             from(components["java"])
         }
