@@ -259,34 +259,6 @@ class StateMachineTest {
     }
 
     @Test
-    fun `test transition with StateTransition`() {
-        // Setup
-        val semaphore = Semaphore(10)
-
-        val transition = object : StateTransition<State, Event, Int> {
-            override fun current(): State = State.S1
-            override fun next(): State = State.S2
-            override fun onEvents(): List<Event> = listOf(Event.E1, Event.E2)
-
-            override fun action(signal: Int) {
-                semaphore.tryAcquire(signal)
-            }
-        }
-
-        val fsm = StateMachine.builder<State, Event, Int>()
-            .connect(State.S1)
-            .connect(transition)
-            .build()
-
-        // Execute
-        fsm.execute(State.S1, State.S2, Event.E1, 1)
-        fsm.execute(State.S1, State.S2, Event.E2, 1)
-
-        // Verify
-        assertEquals(8, semaphore.availablePermits())
-    }
-
-    @Test
     fun `test on event runs action`() {
         var executed = false
         val fsm = StateMachine.builder<State, Event, Boolean>()

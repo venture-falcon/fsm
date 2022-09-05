@@ -24,12 +24,6 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
         action: (signal: N) -> Unit = ::noOp
     ): StateMachineBuilder<S, E, N> = connect(Connection.Transition(current, next, event, action))
 
-    fun connect(transition: StateTransition<S, E, N>): StateMachineBuilder<S, E, N> {
-        return transition.onEvents().fold(this) { builder, event ->
-            builder.connect(transition.current(), transition.next(), event, transition::action)
-        }
-    }
-
     fun connect(current: S, next: S, event: E, action: Action<N>): StateMachineBuilder<S, E, N> =
         connect(current, next, event, action::action)
 
