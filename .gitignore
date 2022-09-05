@@ -1,0 +1,21 @@
+.gradle
+/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+out/
+build/
+
+.DS_Store
+.csv
+.java-version
+.nix-gradle.sh
+.nix-configs
+.envrc
+.direnv
+.env
