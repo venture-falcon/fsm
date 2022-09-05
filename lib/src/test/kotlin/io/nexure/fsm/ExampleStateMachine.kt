@@ -24,7 +24,9 @@ data class PaymentData(
 
 fun buildExampleStateMachine(): StateMachine<PaymentState, PaymentEvent, PaymentData> {
     return StateMachineBuilder<PaymentState, PaymentEvent, PaymentData>()
+        //       ┏━ Initial state
         .connect(PaymentState.Created)
+        //       ┏━ Source state       ┏━ Target state       ┏━ Event triggering transition
         .connect(PaymentState.Created, PaymentState.Pending, PaymentEvent.PaymentSubmitted)
         .connect(PaymentState.Pending, PaymentState.Authorized, PaymentEvent.BankAuthorization) {
             // Invoke some optional action when payment was authorized
