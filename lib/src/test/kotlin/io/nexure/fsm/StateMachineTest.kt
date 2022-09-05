@@ -198,6 +198,21 @@ class StateMachineTest {
             .build()
     }
 
+    @Test(expected = InvalidStateMachineException::class)
+    fun `throw on same source state and event twice for same target state`() {
+        StateMachine.builder<State, Event, Int>()
+            .connect(State.S1)
+            // Same state (S1) and event (E2) twice with same target state (S2),
+            // but with different actions
+            .connect(State.S1, State.S2, Event.E2) {
+                // do X
+            }
+            .connect(State.S1, State.S2, Event.E2) {
+                // do Y
+            }
+            .build()
+    }
+
     @Test
     fun `test interceptor changes signal`() {
         val fsm = StateMachine.builder<State, Event, Int>()
