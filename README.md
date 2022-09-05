@@ -5,6 +5,14 @@
 
 From [Finite state machine](https://en.wikipedia.org/wiki/Finite-state_machine) on Wikipedia
 
+## Add Dependency
+First **make sure to register this Git repository as a Maven repository**. Check the documentation for [using a published package](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-gradle-registry#using-a-published-package) on GitHub if you are unsure how to do it. 
+
+Then include the dependency in your build.gradle(.kts) file.
+```kotlin
+implementation("io.nexure:fsm:1.0.0")
+```
+
  ## Usage
  Here is a fictional example of what a state machine could look like that models the process of a
  payment. In summary it has
