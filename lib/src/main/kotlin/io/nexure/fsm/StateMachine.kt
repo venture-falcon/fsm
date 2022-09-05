@@ -39,24 +39,12 @@ interface StateMachine<S : Any, E : Any, N : Any> {
     fun terminalStates(): Set<S>
 
     /**
-     * Execute a transition into an _initial_ state [next]. If an action is associated with entering the
+     * Execute a transition into the _initial_ state. If an action is associated with entering the
      * initial state, it will then be executed, with [signal] as input.
      *
-     * @throws IllegalTransitionException if [next] is not an initial state
+     * Returns the new (initial) state
      */
-    @Throws(IllegalTransitionException::class)
-    fun execute(next: S, signal: N)
-
-    /**
-     * Execute a transition from state [current] to another state [next] with an
-     * event [event]. If an action is associated with the state transition, it will then be executed,
-     * with [signal] as input.
-     *
-     * @throws IllegalTransitionException if not valid transition exists from state [current] to
-     * state [next] with event [event].
-     */
-    @Throws(IllegalTransitionException::class)
-    fun execute(current: S, next: S, event: E, signal: N)
+    fun onInitial(signal: N): S
 
     /**
      * Execute a transition from state [current] to another state depending on event [event].

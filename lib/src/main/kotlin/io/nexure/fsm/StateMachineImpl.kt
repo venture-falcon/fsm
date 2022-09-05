@@ -40,7 +40,7 @@ internal class StateMachineImpl<S : Any, E : Any, N : Any>(
     override fun initialState(): S = initialState
     override fun terminalStates(): Set<S> = states().minus(nonTerminalStates)
 
-    override fun execute(current: S, next: S, event: E, signal: N) {
+    private fun executeTransition(current: S, next: S, event: E, signal: N) {
         val action: (N) -> Unit = transitionActions[Triple(current, event, next)]
             ?: illegalStateChange(current, next, event)
         val interceptedSignal: N = runInterception(current, next, event, signal)
@@ -48,11 +48,12 @@ internal class StateMachineImpl<S : Any, E : Any, N : Any>(
         postIntercept(current, next, event, interceptedSignal)
     }
 
-    override fun execute(next: S, signal: N) {
-        val action: (N) -> Unit = initialActions[next] ?: illegalStateChange(next)
-        val interceptedSignal: N = runInterception(null, next, null, signal)
+    override fun onInitial(signal: N): S {
+        val action: (N) -> Unit = initialActions[initialState] ?: illegalStateChange(initialState)
+        val interceptedSignal: N = runInterception(null, initialState, null, signal)
         action.invoke(interceptedSignal)
-        postIntercept(null, next, null, interceptedSignal)
+        postIntercept(null, initialState, null, interceptedSignal)
+        return initialState
     }
 
     private fun runInterception(current: S?, next: S, event: E?, signal: N): N {
@@ -67,7 +68,7 @@ internal class StateMachineImpl<S : Any, E : Any, N : Any>(
 
     override fun onEvent(current: S, event: E, signal: N): S {
         val next: S = nextState(current, event) ?: illegalEventForState(current, event)
-        execute(current, next, event, signal)
+        executeTransition(current, next, event, signal)
         return next
     }
 

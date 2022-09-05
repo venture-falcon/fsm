@@ -94,8 +94,8 @@ class StateMachineTest {
         assertTrue(fsm.acceptEvent(State.S1, Event.E3))
         assertTrue(fsm.acceptEvent(State.S3, Event.E3))
 
-        fsm.execute(State.S1, State.S2, Event.E2, "foo")
-        fsm.execute(State.S1, State.S3, Event.E3, "bar")
+        assertEquals(State.S2, fsm.onEvent(State.S1, Event.E2, "foo"))
+        assertEquals(State.S3, fsm.onEvent(State.S1, Event.E3, "bar"))
 
         assertEquals(listOf("foo", "bar"), receivedSignals)
     }
@@ -114,9 +114,9 @@ class StateMachineTest {
             .connect('b', 'c', Event.E3, ::plus)
             .build()
 
-        fsm.execute('a', 1)
-        fsm.execute('a', 'b', Event.E2, 2)
-        fsm.execute('b', 'c', Event.E3, 3)
+        assertEquals('a', fsm.onInitial(1))
+        assertEquals('b', fsm.onEvent('a', Event.E2, 2))
+        assertEquals('c', fsm.onEvent('b', Event.E3, 3))
 
         assertEquals(6, n)
     }
@@ -177,17 +177,6 @@ class StateMachineTest {
         assertFalse(fsm.allowTransition(State.S3, State.S3))
     }
 
-    @Test(expected = IllegalTransitionException::class)
-    fun `test throws on illegal transition`() {
-        val fsm = StateMachine.builder<State, Event, Unit>()
-            .connect(State.S1)
-            .connect(State.S1, State.S2, Event.E1)
-            .connect(State.S2, State.S3, Event.E1)
-            .build()
-
-        fsm.execute(State.S1, State.S3, Event.E1, Unit)
-    }
-
     @Test
     fun `test get next state`() {
         val fsm = StateMachine.builder<State, Event, Int>()
@@ -217,7 +206,7 @@ class StateMachineTest {
             .connect(State.S1, State.S2, Event.E2) { assertEquals(100, it) }
             .build()
 
-        fsm.execute(State.S1, State.S2, Event.E2, 10)
+        fsm.onInitial(10)
     }
 
     @Test
@@ -229,19 +218,9 @@ class StateMachineTest {
             .postIntercept { _, _, _, signal -> value += signal }
             .build()
 
-        fsm.execute(State.S1, 10)
+        fsm.onInitial(10)
         fsm.onEvent(State.S1, Event.E2, 32)
         assertEquals(42, value)
-    }
-
-    @Test(expected = IllegalTransitionException::class)
-    fun `test execution with invalid initial state`() {
-        val fsm = StateMachine.builder<State, Event, Int>()
-            .connect(State.S1)
-            .connect(State.S1, State.S2, Event.E1)
-            .build()
-
-        fsm.execute(State.S2, 0)
     }
 
     @Test
@@ -254,7 +233,7 @@ class StateMachineTest {
             }
             .build()
 
-        fsm.execute(State.S1, State.S2, Event.E1, 4)
+        fsm.onEvent(State.S1, Event.E1, 4)
         assertEquals(6, semaphore.availablePermits())
     }
 
