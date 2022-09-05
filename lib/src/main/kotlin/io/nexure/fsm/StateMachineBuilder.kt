@@ -59,6 +59,16 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
     ): StateMachineBuilder<S, E, N> =
         StateMachineBuilder(transitions, interceptors, postInterceptors.plus(interception))
 
+    /**
+     * @throws InvalidStateMachineException if the configured state machine is not valid. The main
+     * reasons for a state machine not being valid are:
+     * - No initial state
+     * - More than one initial state
+     * - The state machine is not connected (some states are not possible to reach from the initial
+     * state)
+     * - The same source state and event is defined twice
+     */
+    @Throws(InvalidStateMachineException::class)
     fun build(): StateMachine<S, E, N> {
         StateMachineValidator.validate(transitions)
 
