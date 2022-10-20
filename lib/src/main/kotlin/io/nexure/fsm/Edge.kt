@@ -13,5 +13,5 @@ internal class Edge<S : Any, E : Any, N : Any>(
     operator fun component2(): S = target
     operator fun component3(): E = event
 
-    override fun toString(): String = "$source → $event → $target"
+    override fun toString(): String = "$source -> $event -> $target"
 }
