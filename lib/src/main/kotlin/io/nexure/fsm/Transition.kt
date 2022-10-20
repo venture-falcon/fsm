@@ -27,7 +27,8 @@ sealed class Transition<out S : Any> {
 }
 
 /**
- * The event was successfully processed. Any action associated
+ * The event was successfully processed. Any action associated with the transition, including
+ * interceptors, will have been executed successfully.
  */
 data class Executed<S : Any>(val state: S) : Transition<S>() {
     override fun toString(): String = "Executed($state)"
@@ -35,7 +36,7 @@ data class Executed<S : Any>(val state: S) : Transition<S>() {
 
 /**
  * The event was rejected because the event was not permitted by the state machine in the current
- * state, which means that no part of any state transition actions was not executed.
+ * state, which means that no part of any state transition action or interceptors were executed.
  */
 object Rejected : Transition<Nothing>() {
     override fun toString(): String = "Rejected"
