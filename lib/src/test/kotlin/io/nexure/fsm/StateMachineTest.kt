@@ -177,17 +177,6 @@ class StateMachineTest {
         assertFalse(fsm.allowTransition(State.S3, State.S3))
     }
 
-    @Test
-    fun `test get next state`() {
-        val fsm = StateMachine.builder<State, Event, Int>()
-            .connect(State.S1)
-            .connect(State.S1, State.S2, Event.E2)
-            .connect(State.S1, State.S3, Event.E3)
-            .build()
-
-        assertEquals(State.S2, fsm.nextState(State.S1, Event.E2))
-    }
-
     @Test(expected = InvalidStateMachineException::class)
     fun `throw on same source state and event twice for different target state`() {
         StateMachine.builder<State, Event, Int>()

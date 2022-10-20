@@ -25,11 +25,6 @@ internal class StateMachineImpl<S : Any, E : Any, N : Any>(
         .filterIsInstance<Connection.Transition<S, E, N>>()
         .associate { Triple(it.source, it.event, it.target) to it.action }
 
-    override fun allowTransition(current: S, next: S): Boolean {
-        val targets: Set<Pair<S, E?>> = allowedTransitions.getOrDefault(current, emptySet())
-        return targets.any { it.first == next }
-    }
-
     override fun states(): Set<S> = transitions.asSequence()
         .map { listOf(it.source(), it.target()) }
         .flatten()
@@ -72,7 +67,7 @@ internal class StateMachineImpl<S : Any, E : Any, N : Any>(
         return next
     }
 
-    override fun nextState(current: S, event: E): S? {
+    private fun nextState(current: S, event: E): S? {
         val targets: Set<Pair<S, E?>> = allowedTransitions.getOrDefault(current, emptySet())
         return targets.firstOrNull { it.second == event }?.first
     }

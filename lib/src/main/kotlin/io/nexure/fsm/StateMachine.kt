@@ -7,23 +7,6 @@ package io.nexure.fsm
  */
 interface StateMachine<S : Any, E : Any, N : Any> {
     /**
-     * Check if a transition can be done from state [current] to state [next], regardless
-     * of what the event that would cause the transition is.
-     */
-    fun allowTransition(current: S, next: S): Boolean
-
-    /**
-     * Returns the next state, if any, when in state [current] and event [event] occurs. If
-     * the event is not accepted in the given state, null should be returned.
-     */
-    fun nextState(current: S, event: E): S?
-
-    /**
-     * Check if an event is accepted is in the given state
-     */
-    fun acceptEvent(inState: S, event: E): Boolean = nextState(inState, event) != null
-
-    /**
      * Return all the possible states of the state machine
      */
     fun states(): Set<S>
@@ -56,24 +39,6 @@ interface StateMachine<S : Any, E : Any, N : Any> {
      */
     @Throws(IllegalTransitionException::class)
     fun onEvent(current: S, event: E, signal: N): S
-
-    /**
-     * Try to execute a state transition from state [current] to another state with event [event],
-     * using [signal] as input for any action associated with the state transition.
-     *
-     * No error should be thrown due to the transition being invalid if it is not a valid
-     * transition according to the state machine, the request should just be ignored instead.
-     *
-     * Returns the new state, if a state transitions was done, or null if no transition can be
-     * permitted according to the state machine.
-     */
-    fun tryEvent(current: S, event: E, signal: N): S? {
-        return if (acceptEvent(current, event)) {
-            onEvent(current, event, signal)
-        } else {
-            null
-        }
-    }
 
     companion object {
         fun <S : Any, E : Any, N : Any> builder(): StateMachineBuilder<S, E, N> = StateMachineBuilder()
