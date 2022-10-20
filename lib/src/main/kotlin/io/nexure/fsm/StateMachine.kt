@@ -22,38 +22,17 @@ interface StateMachine<S : Any, E : Any, N : Any> {
     fun terminalStates(): Set<S>
 
     /**
-     * Execute a transition into the _initial_ state. If an action is associated with entering the
-     * initial state, it will then be executed, with [signal] as input.
-     *
-     * Returns the new (initial) state
-     */
-    fun onInitial(signal: N): S
-
-    /**
      * Execute a transition from state [current] to another state depending on event [event].
      * If an action is associated with the state transition, it will then be executed,
-     * with [signal] as input. Returns the new state if the transition was successful.
+     * with [signal] as input. Returns a [Transition] indicating if the transition was permitted and
+     * successful or not.
      *
-     * @throws IllegalTransitionException if not valid transition exists from state [current]
-     * with event [event].
+     * Note that any [Exception] that is thrown will be caught and a part of the Transition
+     * return value.
      */
-    @Throws(IllegalTransitionException::class)
-    fun onEvent(current: S, event: E, signal: N): S
+    fun onEvent(current: S, event: E, signal: N): Transition<S>
 
     companion object {
         fun <S : Any, E : Any, N : Any> builder(): StateMachineBuilder<S, E, N> = StateMachineBuilder()
-    }
-}
-
-class IllegalTransitionException(override val message: String?) : Exception() {
-    companion object {
-        fun <S> forInitialState(target: S): IllegalTransitionException =
-            IllegalTransitionException("Illegal state transition into non initial state as initial: '$target'")
-
-        fun <S, E> forState(source: S?, target: S?, event: E): IllegalTransitionException =
-            IllegalTransitionException("Illegal state transition from '$source' to '$target' with event '$event'")
-
-        fun <S, E> forEvent(source: S?, event: E?): IllegalTransitionException =
-            IllegalTransitionException("Illegal event ($event) for state '$source'")
     }
 }

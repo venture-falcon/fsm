@@ -25,7 +25,7 @@ data class PaymentData(
 fun buildExampleStateMachine(): StateMachine<PaymentState, PaymentEvent, PaymentData> {
     return StateMachineBuilder<PaymentState, PaymentEvent, PaymentData>()
         //       ┏━ Initial state
-        .connect(PaymentState.Created)
+        .initial(PaymentState.Created)
         //       ┏━ Source state       ┏━ Target state       ┏━ Event triggering transition
         .connect(PaymentState.Created, PaymentState.Pending, PaymentEvent.PaymentSubmitted)
         .connect(PaymentState.Pending, PaymentState.Authorized, PaymentEvent.BankAuthorization) {
@@ -47,8 +47,6 @@ fun callExampleStateMachine() {
 
     val payment = PaymentData("foo", 42)
 
-    // Transition into the initial state CREATED
-    fsm.onInitial(payment)
     // Transition from state CREATED into state PENDING
     fsm.onEvent(PaymentState.Created, PaymentEvent.PaymentSubmitted, payment)
     // Transition from state PENDING into state AUTHORIZED

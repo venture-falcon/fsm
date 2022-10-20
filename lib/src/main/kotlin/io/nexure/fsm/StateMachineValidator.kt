@@ -2,22 +2,20 @@ package io.nexure.fsm
 
 import java.util.Deque
 import java.util.LinkedList
-import kotlin.collections.HashSet
 
 internal object StateMachineValidator {
-    fun <S : Any, E : Any> validate(transitions: List<Connection<S, E, *>>) {
+    fun <S : Any, E : Any> validate(initialState: S, transitions: List<Edge<S, E, *>>) {
         rejectDuplicates(transitions)
         findIllegalCombinations(transitions)
-        hasSingleInitialState(transitions)
-        isConnected(transitions)
+        isConnected(initialState, transitions)
     }
 
     /**
      * Check so a combination of source state, target state and event is not defined more than once
      */
-    private fun <S : Any, E : Any> rejectDuplicates(transitions: List<Edge<S, E>>) {
-        val duplicate: Edge<S, E>? = transitions
-            .duplicatesBy { Triple(it.source(), it.target(), it.event()) }
+    private fun <S : Any, E : Any> rejectDuplicates(transitions: List<Edge<S, E, *>>) {
+        val duplicate: Edge<S, E, *>? = transitions
+            .duplicatesBy { Triple(it.source, it.target, it.event) }
             .firstOrNull()
 
         validate(duplicate == null) {
@@ -37,10 +35,9 @@ internal object StateMachineValidator {
      * These two transitions would not be allowed to exist in the same state machine at the same
      * time.
      */
-    private fun <S : Any, E : Any> findIllegalCombinations(transitions: List<Connection<S, E, *>>) {
-        val illegal: Connection<S, E, *>? = transitions
-            .filter { it.source() != null }
-            .groupBy { it.source() }
+    private fun <S : Any, E : Any> findIllegalCombinations(transitions: List<Edge<S, E, *>>) {
+        val illegal: Edge<S, E, *>? = transitions
+            .groupBy { it.source }
             .filter { it.value.size > 1 }
             .map { x -> x.value.map { y -> x.value.map { it to y } } }
             .flatten()
@@ -49,8 +46,8 @@ internal object StateMachineValidator {
             ?.first
 
         validate(illegal == null) {
-            val initialState = illegal!!.source()
-            val byEvent = illegal.event()
+            val initialState = illegal!!.source
+            val byEvent = illegal.event
             "Transition from $initialState via $byEvent occurs twice"
         }
     }
@@ -60,37 +57,28 @@ internal object StateMachineValidator {
      * and event but different target, since a source state which is triggered
      * by a specific event should always result in the same target state.
      */
-    private fun <S : Any, E : Any> illegalCombination(e0: Edge<S, E>, e1: Edge<S, E>): Boolean {
+    private fun <S : Any, E : Any> illegalCombination(e0: Edge<S, E, *>, e1: Edge<S, E, *>): Boolean {
         if (e0 === e1) {
             return false
         }
-        val sameSource: Boolean = e0.source() == e1.source()
-        val sameTarget: Boolean = e0.target() == e1.target()
-        val sameEvent: Boolean = e0.event() == e1.event()
+        val sameSource: Boolean = e0.source == e1.source
+        val sameTarget: Boolean = e0.target == e1.target
+        val sameEvent: Boolean = e0.event == e1.event
         return sameSource && sameEvent && !sameTarget
-    }
-
-    /**
-     * Validate that the state machine has exactly one initial state
-     */
-    private fun <S : Any, E : Any> hasSingleInitialState(transitions: List<Connection<S, E, *>>) {
-        val initialStates: Int = transitions.count { it is Connection.Initial }
-        validate(initialStates != 0) { "No initial state was found" }
-        validate(initialStates == 1) { "More than one initial state was found" }
     }
 
     /**
      * Validate the configuration of the state machine, making sure that state machine is connected
      */
-    private fun <S : Any, E : Any> isConnected(transitions: List<Connection<S, E, *>>) {
+    private fun <S : Any, E : Any> isConnected(initialState: S, transitions: List<Edge<S, E, *>>) {
         val stateTransitions: Map<S?, Set<S>> = transitions
-            .groupBy { it.source() }
-            .mapValues { it.value.map { value -> value.target() }.toSet() }
+            .groupBy { it.source }
+            .mapValues { it.value.map { value -> value.target }.toSet() }
             .toMap()
 
         val allNodes: Collection<S> = stateTransitions.keys.filterNotNull() + stateTransitions.values.flatten()
         val uniqueNodes: Int = allNodes.distinct().size
-        validateIsConnected(stateTransitions, uniqueNodes)
+        validateIsConnected(initialState, stateTransitions, uniqueNodes)
     }
 
     /**
@@ -99,10 +87,11 @@ internal object StateMachineValidator {
      * this state machine.
      */
     private tailrec fun <S : Any> validateIsConnected(
+        initialState: S,
         transitions: Map<S?, Set<S>>,
         target: Int,
-        visited: Set<S> = HashSet(target),
-        toVisit: Deque<S> = LinkedList(transitions.getOrDefault(null, emptyList()))
+        visited: Set<S> = setOf(initialState),
+        toVisit: Deque<S> = LinkedList(transitions.getOrDefault(initialState, emptyList()))
     ) {
         validate(visited.size == target || toVisit.isNotEmpty()) {
             val remainingNodes: List<S> = transitions.keys.filterNotNull()
@@ -116,6 +105,7 @@ internal object StateMachineValidator {
             val next: Collection<S> = transitions.getOrDefault(current, emptyList())
             toVisit.addAll(next)
             validateIsConnected(
+                initialState,
                 transitions = transitions - current,
                 target = target,
                 visited = visited + current,
