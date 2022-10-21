@@ -22,6 +22,11 @@ interface StateMachine<S : Any, E : Any, N : Any> {
     fun terminalStates(): Set<S>
 
     /**
+     * Infer the state from a list of events, in the order that they happened
+     */
+    fun reduceState(events: List<E>): S
+
+    /**
      * Execute a transition from state [current] to another state depending on event [event].
      * If an action is associated with the state transition, it will then be executed,
      * with [signal] as input. Returns a [Transition] indicating if the transition was permitted and
