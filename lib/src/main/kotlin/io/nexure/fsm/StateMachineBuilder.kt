@@ -11,9 +11,21 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
 ) {
     constructor() : this(null, emptyList(), emptyList(), emptyList())
 
+    /**
+     * Set the initial state for this state machine. There must be exactly one initial state,
+     * no more or less. Failing to set an initial state for a state machine will cause an
+     * [InvalidStateMachineException] to be thrown when [build()] is invoked.
+     *
+     * Calling this method more than once, with a different initial state will also cause an
+     * [InvalidStateMachineException] to be thrown, but immedaitely upon the second call to this
+     * method rather when the state machine is built.
+     */
+    @Throws(InvalidStateMachineException::class)
     fun initial(state: S): StateMachineBuilder<S, E, N> {
         return if (initialState == null) {
             StateMachineBuilder(state, transitions, interceptors, postInterceptors)
+        } else if (state === initialState) {
+            StateMachineBuilder(initialState, transitions, interceptors, postInterceptors)
         } else {
             throw InvalidStateMachineException("There can only be one initial state")
         }
@@ -32,11 +44,21 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
     private fun connect(edge: Edge<S, E, N>): StateMachineBuilder<S, E, N> =
         StateMachineBuilder(initialState, transitions.plus(edge), interceptors, postInterceptors)
 
+    /**
+     * Add an interceptor that is run _before_ any state machine action or state transition is done.
+     * The interceptor will only be run if the current state permits the event in question. No
+     * execution of the interceptor will be done if the state is rejected.
+     */
     fun intercept(
         interception: (current: S, next: S, event: E, signal: N) -> N
     ): StateMachineBuilder<S, E, N> =
         StateMachineBuilder(initialState, transitions, interceptors.plus(interception), postInterceptors)
 
+    /**
+     * Add an interceptor that is run _after_ a successful processing of an event by the state
+     * machine. This interceptor will not be run if the event was rejected by the state machine, or
+     * if there was an exception thrown while executing the state machine action (if any).
+     */
     fun postIntercept(
         interception: (current: S, next: S, event: E, signal: N) -> Unit
     ): StateMachineBuilder<S, E, N> =

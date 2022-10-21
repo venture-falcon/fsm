@@ -1,7 +1,8 @@
 package io.nexure.fsm
 
 /**
- * Outcome of processing of event by state machine
+ * Outcome of processing of event by state machine. This will indicate if an event was accepted or
+ * rejected by the state machine, or if there was an exception while processing the event.
  */
 sealed class Transition<out S : Any> {
     fun transitioned(): Boolean {
@@ -23,6 +24,37 @@ sealed class Transition<out S : Any> {
             Rejected -> null
             is Failed -> throw this.exception
         }
+    }
+
+    /**
+     * Invoke this lambda if a transition was exceuted and successful
+     */
+    inline fun onExecution(handle: (state: S) -> Unit): Transition<S> {
+        if (this is Executed) {
+            handle(this.state)
+        }
+        return this
+    }
+
+    /**
+     * Invoke this lambda if a transition was rejected by the state machine
+     */
+    inline fun onRejection(handle: () -> Unit): Transition<S> {
+        if (this is Rejected) {
+            handle()
+        }
+        return this
+    }
+
+    /**
+     * Invoke this lambda if an exception was thrown by either an interceptor or during the
+     * execution of the action associated with the event/transition
+     */
+    inline fun onFailure(handle: (exception: Exception) -> Unit): Transition<S> {
+        if (this is Failed) {
+            handle(this.exception)
+        }
+        return this
     }
 }
 
