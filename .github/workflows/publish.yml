@@ -2,6 +2,7 @@ name: publish
 on:
   release:
     types:
+      - prereleased
       - released
 
 concurrency:
