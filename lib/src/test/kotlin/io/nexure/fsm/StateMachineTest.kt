@@ -156,30 +156,6 @@ class StateMachineTest {
     }
 
     @Test
-    fun `test exception in interceptor is caught and returned as failure`() {
-        val exception = IllegalArgumentException("foo")
-        val fsm = StateMachine.builder<State, Event, Int>()
-            .initial(State.S1)
-            .connect(State.S1, State.S2, Event.E2)
-            .intercept { _, _, _, _ -> throw exception }
-            .build()
-
-        assertEquals(Failed(exception), fsm.onEvent(State.S1, Event.E2, 0))
-    }
-
-    @Test
-    fun `test exception in post interceptor is caught and returned as failure`() {
-        val exception = IllegalArgumentException("foo")
-        val fsm = StateMachine.builder<State, Event, Int>()
-            .initial(State.S1)
-            .connect(State.S1, State.S2, Event.E2)
-            .postIntercept { _, _, _, _ -> throw exception }
-            .build()
-
-        assertEquals(Failed(exception), fsm.onEvent(State.S1, Event.E2, 0))
-    }
-
-    @Test
     fun `test transition with Action`() {
         val semaphore = Semaphore(10)
         val fsm = StateMachine.builder<State, Event, Int>()
@@ -235,17 +211,6 @@ class StateMachineTest {
             .build()
 
         assertEquals(Rejected, fsm.onEvent(State.S1, Event.E3, false))
-    }
-
-    @Test
-    fun `test exception in action is caught`() {
-        val exception = IllegalArgumentException("foo")
-        val fsm = StateMachine.builder<State, Event, Boolean>()
-            .initial(State.S1)
-            .connect(State.S1, State.S2, Event.E1) { throw exception }
-            .build()
-
-        assertEquals(Failed(exception), fsm.onEvent(State.S1, Event.E1, false))
     }
 
     @Test(expected = StackOverflowError::class)

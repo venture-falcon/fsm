@@ -27,13 +27,8 @@ interface StateMachine<S : Any, E : Any, N : Any> {
      * with [signal] as input. Returns a [Transition] indicating if the transition was permitted and
      * successful or not.
      *
-     * Any [Exception] that is thrown will be caught and a part of the Transition return value.
-     * Note that only instances of [Exception] will be caught, and instances of [Throwable] which do
-     * not inherit from [Exception] - like [Error] - will not be caught.
-     *
      * It is recommended that the return value is checked for the desired outcome, if it is critical
-     * that an event for example is accepted and not rejected, or that any thrown exceptions are
-     * handled or reported.
+     * that an event for example is accepted and not rejected.
      */
     fun onEvent(current: S, event: E, signal: N): Transition<S>
 

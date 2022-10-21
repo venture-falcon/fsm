@@ -5,29 +5,22 @@ package io.nexure.fsm
  * rejected by the state machine, or if there was an exception while processing the event.
  */
 sealed class Transition<out S : Any> {
-    fun transitioned(): Boolean {
-        return when (this) {
-            is Executed -> true
-            is Failed, Rejected -> false
-        }
-    }
+    fun transitioned(): Boolean = this is Executed<S>
 
     /**
      * Returns
      * - The new state if the transition was permitted and successful ([Executed])
      * - `null` if the transitioned was rejected ([Rejected])
-     * - Throws an exception if such occurred ([Failed])
      */
-    fun stateOrThrow(): S? {
+    fun stateOrNull(): S? {
         return when (this) {
             is Executed -> this.state
             Rejected -> null
-            is Failed -> throw this.exception
         }
     }
 
     /**
-     * Invoke this lambda if a transition was exceuted and successful
+     * Invoke this lambda if a transition was executed and successful
      */
     inline fun onExecution(handle: (state: S) -> Unit): Transition<S> {
         if (this is Executed) {
@@ -42,17 +35,6 @@ sealed class Transition<out S : Any> {
     inline fun onRejection(handle: () -> Unit): Transition<S> {
         if (this is Rejected) {
             handle()
-        }
-        return this
-    }
-
-    /**
-     * Invoke this lambda if an exception was thrown by either an interceptor or during the
-     * execution of the action associated with the event/transition
-     */
-    inline fun onFailure(handle: (exception: Exception) -> Unit): Transition<S> {
-        if (this is Failed) {
-            handle(this.exception)
         }
         return this
     }
@@ -72,13 +54,4 @@ data class Executed<S : Any>(val state: S) : Transition<S>() {
  */
 object Rejected : Transition<Nothing>() {
     override fun toString(): String = "Rejected"
-}
-
-/**
- * The event could not be processed due to an exception while executing the action associated
- * with this state transition, or while executing any interceptors, if such are present.
- * Some part of the action may have completed while others may not have.
- */
-data class Failed(val exception: Exception) : Transition<Nothing>() {
-    override fun toString(): String = "Failed($exception)"
 }

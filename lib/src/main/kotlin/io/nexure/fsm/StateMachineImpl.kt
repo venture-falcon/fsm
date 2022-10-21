@@ -44,12 +44,8 @@ internal class StateMachineImpl<S : Any, E : Any, N : Any>(
 
     override fun onEvent(current: S, event: E, signal: N): Transition<S> {
         val next: S = nextState(current, event) ?: return Rejected
-        return try {
-            executeTransition(current, next, event, signal)
-            Executed(next)
-        } catch (e: Exception) {
-            Failed(e)
-        }
+        executeTransition(current, next, event, signal)
+        return Executed(next)
     }
 
     private fun nextState(current: S, event: E): S? {
