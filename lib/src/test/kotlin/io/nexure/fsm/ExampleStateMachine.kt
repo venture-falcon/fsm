@@ -1,5 +1,6 @@
 package io.nexure.fsm
 
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 enum class PaymentState {
@@ -35,30 +36,39 @@ fun buildExampleStateMachine(): StateMachine<PaymentState, PaymentEvent, Payment
             // Invoke some optional action when payment was refused
         }
         .connect(PaymentState.Authorized, PaymentState.Settled, PaymentEvent.FundsMoved)
-        // This will be called after every state transition
+        // This will be called *before* every state transition, with the possibility of altering
+        // the input `signal` if needed
+        .intercept { current, next, event, signal ->
+            println("Will execute transition from $current to $next due to event $event")
+            signal
+        }
+        // This will be called *after* every state transition
         .postIntercept { previousState, newState, event, _ ->
             println("Transitioned from $previousState to $newState due to event $event")
         }
         .build()
 }
 
-fun callExampleStateMachine() {
-    val fsm: StateMachine<PaymentState, PaymentEvent, PaymentData> = buildExampleStateMachine()
-
+fun callExampleStateMachine(fsm: StateMachine<PaymentState, PaymentEvent, PaymentData>) {
     val payment = PaymentData("foo", 42)
 
     // Transition from state CREATED into state PENDING
-    fsm.onEvent(PaymentState.Created, PaymentEvent.PaymentSubmitted, payment)
+    val state1 = fsm.onEvent(PaymentState.Created, PaymentEvent.PaymentSubmitted, payment)
+    assertEquals(Executed(PaymentState.Pending), state1)
+
     // Transition from state PENDING into state AUTHORIZED
-    fsm.onEvent(PaymentState.Pending, PaymentEvent.BankAuthorization, payment)
+    val state2 = fsm.onEvent(PaymentState.Pending, PaymentEvent.BankAuthorization, payment)
+    assertEquals(Executed(PaymentState.Authorized), state2)
+
     // Transition from state AUTHORIZED into state SETTLED
-    fsm.onEvent(PaymentState.Authorized, PaymentEvent.FundsMoved, payment)
+    val state3 = fsm.onEvent(PaymentState.Authorized, PaymentEvent.FundsMoved, payment)
+    assertEquals(Executed(PaymentState.Settled), state3)
 }
 
 class ExampleStateMachineTest {
     @Test
     fun testExampleStateMachine() {
-        buildExampleStateMachine()
-        callExampleStateMachine()
+        val fsm: StateMachine<PaymentState, PaymentEvent, PaymentData> = buildExampleStateMachine()
+        callExampleStateMachine(fsm)
     }
 }

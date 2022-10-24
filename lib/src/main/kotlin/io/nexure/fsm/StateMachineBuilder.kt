@@ -3,6 +3,11 @@ package io.nexure.fsm
 @Suppress("UNUSED_PARAMETER")
 private fun <N : Any> noOp(signal: N) {}
 
+/**
+ * - [S] - the type of state that the state machine handles
+ * - [E] - the type of events that the can trigger state changes
+ * - [N] - the type of the input used in actions which are executed on state transitions
+ */
 class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
     private var initialState: S? = null,
     private val transitions: List<Edge<S, E, N>> = emptyList(),
@@ -17,7 +22,7 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
      * [InvalidStateMachineException] to be thrown when [build()] is invoked.
      *
      * Calling this method more than once, with a different initial state will also cause an
-     * [InvalidStateMachineException] to be thrown, but immedaitely upon the second call to this
+     * [InvalidStateMachineException] to be thrown, but immediately upon the second call to this
      * method rather when the state machine is built.
      */
     @Throws(InvalidStateMachineException::class)
@@ -31,6 +36,19 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
         }
     }
 
+    /**
+     * Create a state transition from [current] state to [next] state that will be triggered by
+     * [event], and execute an optional [action] when doing the state transition. There can be
+     * multiple events that connect [current] and [next], but there must never be any ambiguous
+     * transitions.
+     *
+     * For example, having both of the following transitions, would NOT be permitted
+     * - `(S1, E1) -> S2`
+     * - `(S1, E1) -> S3`
+     *
+     * since it would not be clear if the new state should be `S2` or `S3` when event `E1` is
+     * received.
+     */
     fun connect(
         current: S,
         next: S,
