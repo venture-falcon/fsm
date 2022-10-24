@@ -37,9 +37,9 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
     }
 
     /**
-     * Create a state transition from [current] state to [next] state that will be triggered by
+     * Create a state transition from [source] state to [target] state that will be triggered by
      * [event], and execute an optional [action] when doing the state transition. There can be
-     * multiple events that connect [current] and [next], but there must never be any ambiguous
+     * multiple events that connect [source] and [target], but there must never be any ambiguous
      * transitions.
      *
      * For example, having both of the following transitions, would NOT be permitted
@@ -50,14 +50,14 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
      * received.
      */
     fun connect(
-        current: S,
-        next: S,
+        source: S,
+        target: S,
         event: E,
         action: (signal: N) -> Unit = ::noOp
-    ): StateMachineBuilder<S, E, N> = connect(Edge(current, next, event, action))
+    ): StateMachineBuilder<S, E, N> = connect(Edge(source, target, event, action))
 
-    fun connect(current: S, next: S, event: E, action: Action<N>): StateMachineBuilder<S, E, N> =
-        connect(current, next, event, action::action)
+    fun connect(source: S, target: S, event: E, action: Action<N>): StateMachineBuilder<S, E, N> =
+        connect(source, target, event, action::action)
 
     private fun connect(edge: Edge<S, E, N>): StateMachineBuilder<S, E, N> =
         StateMachineBuilder(initialState, transitions.plus(edge), interceptors, postInterceptors)
@@ -68,7 +68,7 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
      * execution of the interceptor will be done if the state is rejected.
      */
     fun intercept(
-        interception: (current: S, next: S, event: E, signal: N) -> N
+        interception: (source: S, target: S, event: E, signal: N) -> N
     ): StateMachineBuilder<S, E, N> =
         StateMachineBuilder(initialState, transitions, interceptors.plus(interception), postInterceptors)
 
@@ -78,7 +78,7 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
      * if there was an exception thrown while executing the state machine action (if any).
      */
     fun postIntercept(
-        interception: (current: S, next: S, event: E, signal: N) -> Unit
+        interception: (source: S, target: S, event: E, signal: N) -> Unit
     ): StateMachineBuilder<S, E, N> =
         StateMachineBuilder(initialState, transitions, interceptors, postInterceptors.plus(interception))
 

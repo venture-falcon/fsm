@@ -38,13 +38,13 @@ fun buildExampleStateMachine(): StateMachine<PaymentState, PaymentEvent, Payment
         .connect(PaymentState.Authorized, PaymentState.Settled, PaymentEvent.FundsMoved)
         // This will be called *before* every state transition, with the possibility of altering
         // the input `signal` if needed
-        .intercept { current, next, event, signal ->
-            println("Will execute transition from $current to $next due to event $event")
+        .intercept { source, target, event, signal ->
+            println("Will execute transition from $source to $target due to event $event")
             signal
         }
         // This will be called *after* every state transition
-        .postIntercept { previousState, newState, event, _ ->
-            println("Transitioned from $previousState to $newState due to event $event")
+        .postIntercept { source, target, event, _ ->
+            println("Transitioned from $source to $target due to event $event")
         }
         .build()
 }

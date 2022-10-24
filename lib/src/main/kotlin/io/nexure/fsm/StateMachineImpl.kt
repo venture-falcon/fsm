@@ -28,31 +28,31 @@ internal class StateMachineImpl<S : Any, E : Any, N : Any>(
     override fun reduceState(events: List<E>): S =
         events.fold(initialState) { state, event -> nextState(state, event) ?: state }
 
-    private fun executeTransition(current: S, next: S, event: E, signal: N) {
-        val action: (N) -> Unit = transitionActions[Triple(current, event, next)] ?: return
-        val interceptedSignal: N = runInterception(current, next, event, signal)
+    private fun executeTransition(source: S, target: S, event: E, signal: N) {
+        val action: (N) -> Unit = transitionActions[Triple(source, event, target)] ?: return
+        val interceptedSignal: N = runInterception(source, target, event, signal)
         action.invoke(interceptedSignal)
-        postIntercept(current, next, event, interceptedSignal)
+        postIntercept(source, target, event, interceptedSignal)
     }
 
-    private fun runInterception(current: S, next: S, event: E, signal: N): N {
+    private fun runInterception(source: S, target: S, event: E, signal: N): N {
         return interceptors.fold(signal) { acc, operation ->
-            operation(current, next, event, acc)
+            operation(source, target, event, acc)
         }
     }
 
-    private fun postIntercept(current: S, next: S, event: E, signal: N) {
-        postInterceptors.forEach { intercept -> intercept(current, next, event, signal) }
+    private fun postIntercept(source: S, target: S, event: E, signal: N) {
+        postInterceptors.forEach { intercept -> intercept(source, target, event, signal) }
     }
 
-    override fun onEvent(current: S, event: E, signal: N): Transition<S> {
-        val next: S = nextState(current, event) ?: return Rejected
-        executeTransition(current, next, event, signal)
+    override fun onEvent(state: S, event: E, signal: N): Transition<S> {
+        val next: S = nextState(state, event) ?: return Rejected
+        executeTransition(state, next, event, signal)
         return Executed(next)
     }
 
-    private fun nextState(current: S, event: E): S? {
-        val targets: Set<Pair<S, E?>> = allowedTransitions.getOrDefault(current, emptySet())
+    private fun nextState(source: S, event: E): S? {
+        val targets: Set<Pair<S, E?>> = allowedTransitions.getOrDefault(source, emptySet())
         return targets.firstOrNull { it.second == event }?.first
     }
 }
