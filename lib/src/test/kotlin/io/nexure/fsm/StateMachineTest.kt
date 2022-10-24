@@ -204,6 +204,55 @@ class StateMachineTest {
     }
 
     @Test
+    fun `test reduce state`() {
+        val fsm = StateMachine.builder<State, Event, Unit>()
+            .initial(State.S1)
+            .connect(State.S1, State.S2, Event.E1)
+            .connect(State.S2, State.S3, Event.E2)
+            .connect(State.S3, State.S4, Event.E3)
+            .build()
+
+        val state: State = fsm.reduceState(listOf(Event.E1, Event.E2, Event.E3))
+        assertEquals(State.S4, state)
+    }
+
+    @Test
+    fun `test reduce state with repeated event to be ignored`() {
+        val fsm = StateMachine.builder<State, Event, Unit>()
+            .initial(State.S1)
+            .connect(State.S1, State.S2, Event.E1)
+            .connect(State.S2, State.S3, Event.E2)
+            .connect(State.S3, State.S4, Event.E3)
+            .build()
+
+        val state: State = fsm.reduceState(listOf(Event.E1, Event.E2, Event.E2, Event.E3))
+        assertEquals(State.S4, state)
+    }
+
+    @Test
+    fun `test reduce state with empty list to be resolved to initial state`() {
+        val fsm = StateMachine.builder<State, Event, Unit>()
+            .initial(State.S1)
+            .connect(State.S1, State.S2, Event.E1)
+            .build()
+
+        val state: State = fsm.reduceState(emptyList())
+        assertEquals(State.S1, state)
+    }
+
+    @Test
+    fun `test reduce state with invalid event for state should be ignored`() {
+        val fsm = StateMachine.builder<State, Event, Unit>()
+            .initial(State.S1)
+            .connect(State.S1, State.S2, Event.E1)
+            .connect(State.S2, State.S3, Event.E2)
+            .build()
+
+        val state: State = fsm.reduceState(listOf(Event.E2))
+        assertEquals(State.S1, state)
+    }
+
+    @Test
     fun `test rejected transition`() {
         val fsm = StateMachine.builder<State, Event, Boolean>()
             .initial(State.S1)

@@ -25,6 +25,9 @@ internal class StateMachineImpl<S : Any, E : Any, N : Any>(
     override fun initialState(): S = initialState
     override fun terminalStates(): Set<S> = states().minus(nonTerminalStates)
 
+    override fun reduceState(events: List<E>): S =
+        events.fold(initialState) { state, event -> nextState(state, event) ?: state }
+
     private fun executeTransition(current: S, next: S, event: E, signal: N) {
         val action: (N) -> Unit = transitionActions[Triple(current, event, next)] ?: return
         val interceptedSignal: N = runInterception(current, next, event, signal)
