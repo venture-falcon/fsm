@@ -1,88 +1,58 @@
 package io.nexure.fsm
 
 internal class StateMachineImpl<S : Any, E : Any, N : Any>(
-    private val transitions: List<Connection<S, E, N>>,
-    private val interceptors: List<(S?, S, E?, N) -> (N)>,
-    private val postInterceptors: List<(S?, S, E?, N) -> Unit>
+    private val initialState: S,
+    private val transitions: List<Edge<S, E, N>>,
+    private val interceptors: List<(S, S, E, N) -> (N)>,
+    private val postInterceptors: List<(S, S, E, N) -> Unit>
 ) : StateMachine<S, E, N> {
     private val allowedTransitions: Map<S?, Set<Pair<S, E?>>> = transitions
-        .groupBy { it.source() }
-        .map { it.key to it.value.map { edge -> edge.target() to edge.event() }.toSet() }
+        .groupBy { it.source }
+        .map { it.key to it.value.map { edge -> edge.target to edge.event }.toSet() }
         .toMap()
 
     private val nonTerminalStates: Set<S> = allowedTransitions.keys.filterNotNull().toSet()
 
-    private val initialState: S = transitions
-        .filterIsInstance<Connection.Initial<S, E, N>>()
-        .map { it.target }
-        .singleOrNull() ?: error("State machine most have exactly one initial state")
-
-    private val initialActions: Map<S, (N) -> Unit> = transitions
-        .filterIsInstance<Connection.Initial<S, E, N>>()
-        .associate { it.target to it.action }
-
     private val transitionActions: Map<Triple<S, E, S>, (N) -> Unit> = transitions
-        .filterIsInstance<Connection.Transition<S, E, N>>()
         .associate { Triple(it.source, it.event, it.target) to it.action }
 
-    override fun allowTransition(current: S, next: S): Boolean {
-        val targets: Set<Pair<S, E?>> = allowedTransitions.getOrDefault(current, emptySet())
-        return targets.any { it.first == next }
-    }
-
     override fun states(): Set<S> = transitions.asSequence()
-        .map { listOf(it.source(), it.target()) }
+        .map { listOf(it.source, it.target) }
         .flatten()
-        .filterNotNull()
         .distinct()
         .toSet()
 
     override fun initialState(): S = initialState
     override fun terminalStates(): Set<S> = states().minus(nonTerminalStates)
 
-    private fun executeTransition(current: S, next: S, event: E, signal: N) {
-        val action: (N) -> Unit = transitionActions[Triple(current, event, next)]
-            ?: illegalStateChange(current, next, event)
-        val interceptedSignal: N = runInterception(current, next, event, signal)
+    override fun reduceState(events: List<E>): S =
+        events.fold(initialState) { state, event -> nextState(state, event) ?: state }
+
+    private fun executeTransition(source: S, target: S, event: E, signal: N) {
+        val action: (N) -> Unit = transitionActions[Triple(source, event, target)] ?: return
+        val interceptedSignal: N = runInterception(source, target, event, signal)
         action.invoke(interceptedSignal)
-        postIntercept(current, next, event, interceptedSignal)
+        postIntercept(source, target, event, interceptedSignal)
     }
 
-    override fun onInitial(signal: N): S {
-        val action: (N) -> Unit = initialActions[initialState] ?: illegalStateChange(initialState)
-        val interceptedSignal: N = runInterception(null, initialState, null, signal)
-        action.invoke(interceptedSignal)
-        postIntercept(null, initialState, null, interceptedSignal)
-        return initialState
-    }
-
-    private fun runInterception(current: S?, next: S, event: E?, signal: N): N {
+    private fun runInterception(source: S, target: S, event: E, signal: N): N {
         return interceptors.fold(signal) { acc, operation ->
-            operation(current, next, event, acc)
+            operation(source, target, event, acc)
         }
     }
 
-    private fun postIntercept(current: S?, next: S, event: E?, signal: N) {
-        postInterceptors.forEach { intercept -> intercept(current, next, event, signal) }
+    private fun postIntercept(source: S, target: S, event: E, signal: N) {
+        postInterceptors.forEach { intercept -> intercept(source, target, event, signal) }
     }
 
-    override fun onEvent(current: S, event: E, signal: N): S {
-        val next: S = nextState(current, event) ?: illegalEventForState(current, event)
-        executeTransition(current, next, event, signal)
-        return next
+    override fun onEvent(state: S, event: E, signal: N): Transition<S> {
+        val next: S = nextState(state, event) ?: return Rejected
+        executeTransition(state, next, event, signal)
+        return Executed(next)
     }
 
-    override fun nextState(current: S, event: E): S? {
-        val targets: Set<Pair<S, E?>> = allowedTransitions.getOrDefault(current, emptySet())
+    private fun nextState(source: S, event: E): S? {
+        val targets: Set<Pair<S, E?>> = allowedTransitions.getOrDefault(source, emptySet())
         return targets.firstOrNull { it.second == event }?.first
     }
 }
-
-private fun <S : Any> illegalStateChange(target: S): Nothing =
-    throw IllegalTransitionException.forInitialState(target)
-
-private fun <S : Any> illegalStateChange(from: S?, target: S, event: Any): Nothing =
-    throw IllegalTransitionException.forState(from, target, event)
-
-private fun <S : Any> illegalEventForState(from: S?, event: Any?): Nothing =
-    throw IllegalTransitionException.forEvent(from, event)
