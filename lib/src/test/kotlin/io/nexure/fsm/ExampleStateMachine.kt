@@ -53,15 +53,15 @@ fun callExampleStateMachine(fsm: StateMachine<PaymentState, PaymentEvent, Paymen
     val payment = PaymentData("foo", 42)
 
     // Transition from state CREATED into state PENDING
-    val state1 = fsm.onEvent(PaymentState.Created, PaymentEvent.PaymentSubmitted, payment)
+    val state1 = fsm.onEvent(PaymentState.Created, PaymentEvent.PaymentSubmitted, payment).awaitBlocking()
     assertEquals(Executed(PaymentState.Pending), state1)
 
     // Transition from state PENDING into state AUTHORIZED
-    val state2 = fsm.onEvent(PaymentState.Pending, PaymentEvent.BankAuthorization, payment)
+    val state2 = fsm.onEvent(PaymentState.Pending, PaymentEvent.BankAuthorization, payment).awaitBlocking()
     assertEquals(Executed(PaymentState.Authorized), state2)
 
     // Transition from state AUTHORIZED into state SETTLED
-    val state3 = fsm.onEvent(PaymentState.Authorized, PaymentEvent.FundsMoved, payment)
+    val state3 = fsm.onEvent(PaymentState.Authorized, PaymentEvent.FundsMoved, payment).awaitBlocking()
     assertEquals(Executed(PaymentState.Settled), state3)
 }
 

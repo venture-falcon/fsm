@@ -1,10 +1,15 @@
 package io.nexure.fsm
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+
 internal class StateMachineImpl<S : Any, E : Any, N : Any>(
     private val initialState: S,
     private val transitions: List<Edge<S, E, N>>,
     private val interceptors: List<(S, S, E, N) -> (N)>,
-    private val postInterceptors: List<(S, S, E, N) -> Unit>
+    private val postInterceptors: List<(S, S, E, N) -> Unit>,
+    private val scope: CoroutineScope,
 ) : StateMachine<S, E, N> {
     private val allowedTransitions: Map<S?, Set<Pair<S, E?>>> = transitions
         .groupBy { it.source }
@@ -13,7 +18,7 @@ internal class StateMachineImpl<S : Any, E : Any, N : Any>(
 
     private val nonTerminalStates: Set<S> = allowedTransitions.keys.filterNotNull().toSet()
 
-    private val transitionActions: Map<Triple<S, E, S>, (N) -> Unit> = transitions
+    private val transitionActions: Map<Triple<S, E, S>, suspend (N) -> Unit> = transitions
         .associate { Triple(it.source, it.event, it.target) to it.action }
 
     override fun states(): Set<S> = transitions.asSequence()
@@ -28,10 +33,10 @@ internal class StateMachineImpl<S : Any, E : Any, N : Any>(
     override fun reduceState(events: List<E>): S =
         events.fold(initialState) { state, event -> nextState(state, event) ?: state }
 
-    private fun executeTransition(source: S, target: S, event: E, signal: N) {
-        val action: (N) -> Unit = transitionActions[Triple(source, event, target)] ?: return
+    private suspend fun executeTransition(source: S, target: S, event: E, signal: N) {
+        val action: suspend (N) -> Unit = transitionActions[Triple(source, event, target)] ?: return
         val interceptedSignal: N = runInterception(source, target, event, signal)
-        action.invoke(interceptedSignal)
+        action(interceptedSignal)
         postIntercept(source, target, event, interceptedSignal)
     }
 
@@ -45,10 +50,12 @@ internal class StateMachineImpl<S : Any, E : Any, N : Any>(
         postInterceptors.forEach { intercept -> intercept(source, target, event, signal) }
     }
 
-    override fun onEvent(state: S, event: E, signal: N): Transition<S> {
-        val next: S = nextState(state, event) ?: return Rejected
-        executeTransition(state, next, event, signal)
-        return Executed(next)
+    override fun onEvent(state: S, event: E, signal: N): Deferred<Transition<S>> {
+        return scope.async {
+            val next: S = nextState(state, event) ?: return@async Rejected
+            executeTransition(state, next, event, signal)
+            Executed(next)
+        }
     }
 
     private fun nextState(source: S, event: E): S? {
