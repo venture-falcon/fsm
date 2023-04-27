@@ -1,11 +1,13 @@
 package io.nexure.fsm
 
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.Semaphore
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class StateMachineTest {
     @Test
     fun `test list of all states`() {
@@ -69,7 +71,7 @@ class StateMachineTest {
     }
 
     @Test
-    fun `test execution on signal on state change`() {
+    fun `test execution on signal on state change`() = runTest {
         var n: Int = 0
 
         fun plus(signal: Int) {
@@ -82,8 +84,8 @@ class StateMachineTest {
             .connect('b', 'c', Event.E3, ::plus)
             .build()
 
-        assertEquals(Executed('b'), fsm.onEvent('a', Event.E2, 2).awaitBlocking())
-        assertEquals(Executed('c'), fsm.onEvent('b', Event.E3, 3).awaitBlocking())
+        assertEquals(Executed('b'), fsm.onEvent('a', Event.E2, 2))
+        assertEquals(Executed('c'), fsm.onEvent('b', Event.E3, 3))
 
         assertEquals(5, n)
     }
@@ -133,18 +135,18 @@ class StateMachineTest {
     }
 
     @Test
-    fun `test interceptor changes signal`() {
+    fun `test interceptor changes signal`() = runTest {
         val fsm = StateMachine.builder<State, Event, Int>()
             .intercept { _, _, _, signal -> signal * 10 }
             .initial(State.S1)
             .connect(State.S1, State.S2, Event.E2) { assertEquals(100, it) }
             .build()
 
-        fsm.onEvent(State.S1, Event.E2, 10).awaitBlocking()
+        fsm.onEvent(State.S1, Event.E2, 10)
     }
 
     @Test
-    fun `test post interceptor is executed`() {
+    fun `test post interceptor is executed`() = runTest {
         var value: Int = 0
         val fsm = StateMachine.builder<State, Event, Int>()
             .initial(State.S1)
@@ -152,12 +154,12 @@ class StateMachineTest {
             .postIntercept { _, _, _, signal -> value += signal }
             .build()
 
-        fsm.onEvent(State.S1, Event.E2, 32).awaitBlocking()
+        fsm.onEvent(State.S1, Event.E2, 32)
         assertEquals(32, value)
     }
 
     @Test
-    fun `test transition with Action`() {
+    fun `test transition with Action`() = runTest {
         val semaphore = Semaphore(10)
         val fsm = StateMachine.builder<State, Event, Int>()
             .initial(State.S1)
@@ -166,42 +168,42 @@ class StateMachineTest {
             }
             .build()
 
-        fsm.onEvent(State.S1, Event.E1, 4).awaitBlocking()
+        fsm.onEvent(State.S1, Event.E1, 4)
         assertEquals(6, semaphore.availablePermits())
     }
 
     @Test
-    fun `test on event runs action`() {
+    fun `test on event runs action`() = runTest {
         var executed = false
         val fsm = StateMachine.builder<State, Event, Boolean>()
             .initial(State.S1)
             .connect(State.S1, State.S2, Event.E1) { signal -> executed = signal }
             .build()
 
-        fsm.onEvent(State.S1, Event.E1, true).awaitBlocking()
+        fsm.onEvent(State.S1, Event.E1, true)
         assertTrue(executed)
     }
 
     @Test
-    fun `test going back to initial state is permitted`() {
+    fun `test going back to initial state is permitted`() = runTest {
         val fsm = StateMachine.builder<State, Event, Boolean>()
             .initial(State.S1)
             .connect(State.S1, State.S2, Event.E1)
             .connect(State.S2, State.S1, Event.E2)
             .build()
 
-        assertEquals(Executed(State.S2), fsm.onEvent(State.S1, Event.E1, false).awaitBlocking())
-        assertEquals(Executed(State.S1), fsm.onEvent(State.S2, Event.E2, false).awaitBlocking())
+        assertEquals(Executed(State.S2), fsm.onEvent(State.S1, Event.E1, false))
+        assertEquals(Executed(State.S1), fsm.onEvent(State.S2, Event.E2, false))
     }
 
     @Test
-    fun `test going back to same state is permitted`() {
+    fun `test going back to same state is permitted`() = runTest {
         val fsm = StateMachine.builder<State, Event, Boolean>()
             .initial(State.S1)
             .connect(State.S1, State.S1, Event.E1)
             .build()
 
-        assertEquals(Executed(State.S1), fsm.onEvent(State.S1, Event.E1, false).awaitBlocking())
+        assertEquals(Executed(State.S1), fsm.onEvent(State.S1, Event.E1, false))
     }
 
     @Test
@@ -254,39 +256,24 @@ class StateMachineTest {
     }
 
     @Test
-    fun `test rejected transition`() {
+    fun `test rejected transition`() = runTest {
         val fsm = StateMachine.builder<State, Event, Boolean>()
             .initial(State.S1)
             .connect(State.S1, State.S2, Event.E1)
             .build()
 
-        assertEquals(Rejected, fsm.onEvent(State.S1, Event.E3, false).awaitBlocking())
+        assertEquals(Rejected, fsm.onEvent(State.S1, Event.E3, false))
     }
 
     @Test(expected = StackOverflowError::class)
-    fun `test throwable in action is not caught`() {
+    fun `test throwable in action is not caught`() = runTest {
         val exception = StackOverflowError("foo")
         val fsm = StateMachine.builder<State, Event, Boolean>()
             .initial(State.S1)
             .connect(State.S1, State.S2, Event.E1) { throw exception }
             .build()
 
-        fsm.onEvent(State.S1, Event.E1, false).awaitBlocking()
-    }
-    
-    @Test
-    fun `test suspend function call in action`() {
-        suspend fun foo(input: Boolean) {}
-
-        runBlocking {
-            val fsm = StateMachine.builder<State, Event, Boolean>()
-                .initial(State.S1)
-                .connect(State.S1, State.S2, Event.E1) { foo(it) }
-                .connect(State.S2, State.S3, Event.E2, ::foo)
-                .build()
-
-            assertEquals(Executed(State.S2), fsm.onEvent(State.S1, Event.E1, true).await())
-        }
+        fsm.onEvent(State.S1, Event.E1, false)
     }
 }
 

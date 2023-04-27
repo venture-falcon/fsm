@@ -1,5 +1,7 @@
 package io.nexure.fsm
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -49,25 +51,26 @@ fun buildExampleStateMachine(): StateMachine<PaymentState, PaymentEvent, Payment
         .build()
 }
 
-fun callExampleStateMachine(fsm: StateMachine<PaymentState, PaymentEvent, PaymentData>) {
+suspend fun callExampleStateMachine(fsm: StateMachine<PaymentState, PaymentEvent, PaymentData>) {
     val payment = PaymentData("foo", 42)
 
     // Transition from state CREATED into state PENDING
-    val state1 = fsm.onEvent(PaymentState.Created, PaymentEvent.PaymentSubmitted, payment).awaitBlocking()
+    val state1 = fsm.onEvent(PaymentState.Created, PaymentEvent.PaymentSubmitted, payment)
     assertEquals(Executed(PaymentState.Pending), state1)
 
     // Transition from state PENDING into state AUTHORIZED
-    val state2 = fsm.onEvent(PaymentState.Pending, PaymentEvent.BankAuthorization, payment).awaitBlocking()
+    val state2 = fsm.onEvent(PaymentState.Pending, PaymentEvent.BankAuthorization, payment)
     assertEquals(Executed(PaymentState.Authorized), state2)
 
     // Transition from state AUTHORIZED into state SETTLED
-    val state3 = fsm.onEvent(PaymentState.Authorized, PaymentEvent.FundsMoved, payment).awaitBlocking()
+    val state3 = fsm.onEvent(PaymentState.Authorized, PaymentEvent.FundsMoved, payment)
     assertEquals(Executed(PaymentState.Settled), state3)
 }
 
 class ExampleStateMachineTest {
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun testExampleStateMachine() {
+    fun testExampleStateMachine() = runTest {
         val fsm: StateMachine<PaymentState, PaymentEvent, PaymentData> = buildExampleStateMachine()
         callExampleStateMachine(fsm)
     }

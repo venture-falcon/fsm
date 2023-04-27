@@ -1,15 +1,10 @@
 package io.nexure.fsm
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-
 internal class StateMachineImpl<S : Any, E : Any, N : Any>(
     private val initialState: S,
     private val transitions: List<Edge<S, E, N>>,
     private val interceptors: List<(S, S, E, N) -> (N)>,
     private val postInterceptors: List<(S, S, E, N) -> Unit>,
-    private val scope: CoroutineScope,
 ) : StateMachine<S, E, N> {
     private val allowedTransitions: Map<S?, Set<Pair<S, E?>>> = transitions
         .groupBy { it.source }
@@ -50,12 +45,10 @@ internal class StateMachineImpl<S : Any, E : Any, N : Any>(
         postInterceptors.forEach { intercept -> intercept(source, target, event, signal) }
     }
 
-    override fun onEvent(state: S, event: E, signal: N): Deferred<Transition<S>> {
-        return scope.async {
-            val next: S = nextState(state, event) ?: return@async Rejected
-            executeTransition(state, next, event, signal)
-            Executed(next)
-        }
+    override suspend fun onEvent(state: S, event: E, signal: N): Transition<S> {
+        val next: S = nextState(state, event) ?: return Rejected
+        executeTransition(state, next, event, signal)
+        return Executed(next)
     }
 
     private fun nextState(source: S, event: E): S? {

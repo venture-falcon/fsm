@@ -1,11 +1,5 @@
 package io.nexure.fsm
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-
-@Suppress("UNUSED_PARAMETER")
-private fun <N : Any> noOp(signal: N) {}
-
 /**
  * - [S] - the type of state that the state machine handles
  * - [E] - the type of events that the can trigger state changes
@@ -16,15 +10,8 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
     private val transitions: List<Edge<S, E, N>> = emptyList(),
     private val interceptors: List<(S, S, E, N) -> (N)> = emptyList(),
     private val postInterceptors: List<(S, S, E, N) -> Unit> = emptyList(),
-    private var scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
 ) {
     constructor() : this(null, emptyList(), emptyList(), emptyList())
-
-    /**
-     * Override the default [CoroutineScope] which coroutines (actions) will be executed in.
-     */
-    fun withScope(scope: CoroutineScope): StateMachineBuilder<S, E, N> =
-        StateMachineBuilder(initialState, transitions, interceptors, postInterceptors, scope)
 
     /**
      * Set the initial state for this state machine. There must be exactly one initial state,
@@ -113,7 +100,6 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
             transitions,
             interceptors,
             postInterceptors,
-            scope,
         )
     }
 }
