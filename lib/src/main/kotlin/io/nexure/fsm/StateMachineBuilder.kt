@@ -9,7 +9,7 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
     private var initialState: S? = null,
     private val transitions: List<Edge<S, E, N>> = emptyList(),
     private val interceptors: List<(S, S, E, N) -> (N)> = emptyList(),
-    private val postInterceptors: List<(S, S, E, N) -> Unit> = emptyList(),
+    private val postInterceptors: List<(S, S, E, N) -> Unit> = emptyList()
 ) {
     constructor() : this(null, emptyList(), emptyList(), emptyList())
 
@@ -99,7 +99,7 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
             initState,
             transitions,
             interceptors,
-            postInterceptors,
+            postInterceptors
         )
     }
 }

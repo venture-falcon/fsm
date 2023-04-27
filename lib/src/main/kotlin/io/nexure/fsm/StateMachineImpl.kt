@@ -4,7 +4,7 @@ internal class StateMachineImpl<S : Any, E : Any, N : Any>(
     private val initialState: S,
     private val transitions: List<Edge<S, E, N>>,
     private val interceptors: List<(S, S, E, N) -> (N)>,
-    private val postInterceptors: List<(S, S, E, N) -> Unit>,
+    private val postInterceptors: List<(S, S, E, N) -> Unit>
 ) : StateMachine<S, E, N> {
     private val allowedTransitions: Map<S?, Set<Pair<S, E?>>> = transitions
         .groupBy { it.source }
