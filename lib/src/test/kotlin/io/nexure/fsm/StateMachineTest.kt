@@ -185,6 +185,32 @@ class StateMachineTest {
     }
 
     @Test
+    fun `test on event runs action from non suspend function reference`() = runTest {
+        var executed = false
+        fun toggle(flag: Boolean) { executed = flag }
+        val fsm = StateMachine.builder<State, Event, Boolean>()
+            .initial(State.S1)
+            .connect(State.S1, State.S2, Event.E1, ::toggle)
+            .build()
+
+        fsm.onEvent(State.S1, Event.E1, true)
+        assertTrue(executed)
+    }
+
+    @Test
+    fun `test on event runs action from suspend function reference`() = runTest {
+        var executed = false
+        suspend fun toggle(flag: Boolean) { executed = flag }
+        val fsm = StateMachine.builder<State, Event, Boolean>()
+            .initial(State.S1)
+            .connect(State.S1, State.S2, Event.E1, ::toggle)
+            .build()
+
+        fsm.onEvent(State.S1, Event.E1, true)
+        assertTrue(executed)
+    }
+
+    @Test
     fun `test going back to initial state is permitted`() = runTest {
         val fsm = StateMachine.builder<State, Event, Boolean>()
             .initial(State.S1)
