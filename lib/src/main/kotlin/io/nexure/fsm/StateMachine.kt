@@ -1,7 +1,5 @@
 package io.nexure.fsm
 
-import kotlinx.coroutines.Deferred
-
 /**
  * S = State
  * E = Event triggering a transition between two states
