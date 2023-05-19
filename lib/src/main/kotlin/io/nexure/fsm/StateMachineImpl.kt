@@ -3,7 +3,6 @@ package io.nexure.fsm
 internal class StateMachineImpl<S : Any, E : Any>(
     private val initialState: S,
     private val transitions: List<Edge<S, E>>,
-    private val postInterceptors: List<(S, S, E) -> Unit>
 ) : StateMachine<S, E> {
     private val allowedTransitions: Map<S?, Set<Pair<S, E?>>> = transitions
         .groupBy { it.source }
@@ -24,20 +23,9 @@ internal class StateMachineImpl<S : Any, E : Any>(
     override fun reduceState(events: List<E>): S =
         events.fold(initialState) { state, event -> nextState(state, event) ?: state }
 
-    private fun postIntercept(source: S, target: S, event: E) {
-        postInterceptors.forEach { intercept -> intercept(source, target, event) }
-    }
-
-//    override suspend fun initialize(signal: N): S {
-//        initialAction(signal)
-//        return initialState
-//    }
-
-    override suspend fun onEvent(state: S, event: E, action: suspend () -> Unit): Transition<S> {
+    override fun onEvent(state: S, event: E): Transition<S> {
         val next: S = nextState(state, event) ?: return Rejected
-        action()
-        postIntercept(state, next, event)
-        return Executed(next)
+        return Accepted(next)
     }
 
     private fun nextState(source: S, event: E): S? {

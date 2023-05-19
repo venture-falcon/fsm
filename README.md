@@ -15,7 +15,7 @@ implementation("io.nexure:fsm:2.0.0")
 
  ## Usage
  Here is a fictional example of what a state machine could look like that models the process of a
- payment. In summary it has
+ payment. In summary, it has
  - _Initial_ state `CREATED`
  - _Intermediary_ states `PENDING` and `AUTHORIZED`
  - _Terminal_ states `SETTLED` and `REFUSED`
@@ -33,4 +33,4 @@ implementation("io.nexure:fsm:2.0.0")
 
 See [ExampleStateMachineTest.kt](lib/src/test/kotlin/io/nexure/fsm/ExampleStateMachine.kt) for an
 example of how a state machine with the above states and transitions is built, and how it can
-be invoked to execute certain actions on a given state transition.
+be invoked to execute certain actions on state transition.
