@@ -3,15 +3,13 @@ package io.nexure.fsm
 /**
  * - [S] - the type of state that the state machine handles
  * - [E] - the type of events that the can trigger state changes
- * - [N] - the type of the input used in actions which are executed on state transitions
  */
-class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
+class StateMachineBuilder<S : Any, E : Any> private constructor(
     private var initialState: S? = null,
-    private val transitions: List<Edge<S, E, N>> = emptyList(),
-    private val interceptors: List<(S, S, E, N) -> (N)> = emptyList(),
-    private val postInterceptors: List<(S, S, E, N) -> Unit> = emptyList()
+    private val transitions: List<Edge<S, E>> = emptyList(),
+    private val postInterceptors: List<(S, S, E) -> Unit> = emptyList(),
 ) {
-    constructor() : this(null, emptyList(), emptyList(), emptyList())
+    constructor() : this(null, emptyList(), emptyList())
 
     /**
      * Set the initial state for this state machine. There must be exactly one initial state,
@@ -23,11 +21,11 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
      * method rather when the state machine is built.
      */
     @Throws(InvalidStateMachineException::class)
-    fun initial(state: S): StateMachineBuilder<S, E, N> {
+    fun initial(state: S): StateMachineBuilder<S, E> {
         return if (initialState == null) {
-            StateMachineBuilder(state, transitions, interceptors, postInterceptors)
+            StateMachineBuilder(state, transitions, postInterceptors)
         } else if (state === initialState) {
-            StateMachineBuilder(initialState, transitions, interceptors, postInterceptors)
+            StateMachineBuilder(initialState, transitions, postInterceptors)
         } else {
             throw InvalidStateMachineException("There can only be one initial state")
         }
@@ -50,24 +48,10 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
         source: S,
         target: S,
         event: E,
-        action: suspend (signal: N) -> Unit = {}
-    ): StateMachineBuilder<S, E, N> = connect(Edge(source, target, event, action))
+    ): StateMachineBuilder<S, E> = connect(Edge(source, target, event))
 
-    fun connect(source: S, target: S, event: E, action: Action<N>): StateMachineBuilder<S, E, N> =
-        connect(source, target, event, action::action)
-
-    private fun connect(edge: Edge<S, E, N>): StateMachineBuilder<S, E, N> =
-        StateMachineBuilder(initialState, transitions.plus(edge), interceptors, postInterceptors)
-
-    /**
-     * Add an interceptor that is run _before_ any state machine action or state transition is done.
-     * The interceptor will only be run if the current state permits the event in question. No
-     * execution of the interceptor will be done if the state is rejected.
-     */
-    fun intercept(
-        interception: (source: S, target: S, event: E, signal: N) -> N
-    ): StateMachineBuilder<S, E, N> =
-        StateMachineBuilder(initialState, transitions, interceptors.plus(interception), postInterceptors)
+    private fun connect(edge: Edge<S, E>): StateMachineBuilder<S, E> =
+        StateMachineBuilder(initialState, transitions.plus(edge), postInterceptors)
 
     /**
      * Add an interceptor that is run _after_ a successful processing of an event by the state
@@ -75,9 +59,9 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
      * if there was an exception thrown while executing the state machine action (if any).
      */
     fun postIntercept(
-        interception: (source: S, target: S, event: E, signal: N) -> Unit
-    ): StateMachineBuilder<S, E, N> =
-        StateMachineBuilder(initialState, transitions, interceptors, postInterceptors.plus(interception))
+        interception: (source: S, target: S, event: E) -> Unit
+    ): StateMachineBuilder<S, E> =
+        StateMachineBuilder(initialState, transitions, postInterceptors.plus(interception))
 
     /**
      * @throws InvalidStateMachineException if the configured state machine is not valid. The main
@@ -89,7 +73,7 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
      * - The same source state and event is defined twice
      */
     @Throws(InvalidStateMachineException::class)
-    fun build(): StateMachine<S, E, N> {
+    fun build(): StateMachine<S, E> {
         val initState: S = initialState
             ?: throw InvalidStateMachineException("No initial state set for state machine")
 
@@ -98,7 +82,6 @@ class StateMachineBuilder<S : Any, E : Any, N : Any> private constructor(
         return StateMachineImpl(
             initState,
             transitions,
-            interceptors,
             postInterceptors
         )
     }

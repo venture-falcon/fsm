@@ -18,26 +18,6 @@ sealed class Transition<out S : Any> {
             Rejected -> null
         }
     }
-
-    /**
-     * Invoke this lambda if a transition was executed and successful
-     */
-    inline fun onExecution(handle: (state: S) -> Unit): Transition<S> {
-        if (this is Executed) {
-            handle(this.state)
-        }
-        return this
-    }
-
-    /**
-     * Invoke this lambda if a transition was rejected by the state machine
-     */
-    inline fun onRejection(handle: () -> Unit): Transition<S> {
-        if (this is Rejected) {
-            handle()
-        }
-        return this
-    }
 }
 
 /**

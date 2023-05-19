@@ -3,9 +3,8 @@ package io.nexure.fsm
 /**
  * S = State
  * E = Event triggering a transition between two states
- * N = Signal, data associated with a state change
  */
-interface StateMachine<S : Any, E : Any, N : Any> {
+interface StateMachine<S : Any, E : Any> {
     /**
      * Return all the possible states of the state machine
      */
@@ -26,6 +25,13 @@ interface StateMachine<S : Any, E : Any, N : Any> {
      */
     fun reduceState(events: List<E>): S
 
+//    /**
+//     * Transition into the initial state, executing the action - if any - setup in the state machine for initialization.
+//     *
+//     * Returns the state after the initialization, which will always be the initial state.
+//     */
+//    suspend fun initialize(signal: N): S
+
     /**
      * Execute a transition from [state] to another state depending on [event].
      * If an action is associated with the state transition, it will then be executed,
@@ -35,9 +41,9 @@ interface StateMachine<S : Any, E : Any, N : Any> {
      * It is recommended that the return value is checked for the desired outcome, if it is critical
      * that an event for example is accepted and not rejected.
      */
-    suspend fun onEvent(state: S, event: E, signal: N): Transition<S>
+    suspend fun onEvent(state: S, event: E, action: suspend () -> Unit = {}): Transition<S>
 
     companion object {
-        fun <S : Any, E : Any, N : Any> builder(): StateMachineBuilder<S, E, N> = StateMachineBuilder()
+        fun <S : Any, E : Any, N : Any> builder(): StateMachineBuilder<S, E> = StateMachineBuilder()
     }
 }

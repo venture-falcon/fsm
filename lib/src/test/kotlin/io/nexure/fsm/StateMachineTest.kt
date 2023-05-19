@@ -80,12 +80,12 @@ class StateMachineTest {
 
         val fsm = StateMachine.builder<Char, Event, Int>()
             .initial('a')
-            .connect('a', 'b', Event.E2, ::plus)
-            .connect('b', 'c', Event.E3, ::plus)
+            .connect('a', 'b', Event.E2)
+            .connect('b', 'c', Event.E3)
             .build()
 
-        assertEquals(Executed('b'), fsm.onEvent('a', Event.E2, 2))
-        assertEquals(Executed('c'), fsm.onEvent('b', Event.E3, 3))
+        assertEquals(Executed('b'), fsm.onEvent('a', Event.E2) { n += 2})
+        assertEquals(Executed('c'), fsm.onEvent('b', Event.E3) { n += 3})
 
         assertEquals(5, n)
     }
@@ -125,24 +125,9 @@ class StateMachineTest {
             .initial(State.S1)
             // Same state (S1) and event (E2) twice with same target state (S2),
             // but with different actions
-            .connect(State.S1, State.S2, Event.E2) {
-                // do X
-            }
-            .connect(State.S1, State.S2, Event.E2) {
-                // do Y
-            }
+            .connect(State.S1, State.S2, Event.E2)
+            .connect(State.S1, State.S2, Event.E2)
             .build()
-    }
-
-    @Test
-    fun `test interceptor changes signal`() = runTest {
-        val fsm = StateMachine.builder<State, Event, Int>()
-            .intercept { _, _, _, signal -> signal * 10 }
-            .initial(State.S1)
-            .connect(State.S1, State.S2, Event.E2) { assertEquals(100, it) }
-            .build()
-
-        fsm.onEvent(State.S1, Event.E2, 10)
     }
 
     @Test
@@ -151,10 +136,10 @@ class StateMachineTest {
         val fsm = StateMachine.builder<State, Event, Int>()
             .initial(State.S1)
             .connect(State.S1, State.S2, Event.E2)
-            .postIntercept { _, _, _, signal -> value += signal }
+            .postIntercept { _, _, _ -> value += 32 }
             .build()
 
-        fsm.onEvent(State.S1, Event.E2, 32)
+        fsm.onEvent(State.S1, Event.E2)
         assertEquals(32, value)
     }
 
@@ -163,12 +148,13 @@ class StateMachineTest {
         val semaphore = Semaphore(10)
         val fsm = StateMachine.builder<State, Event, Int>()
             .initial(State.S1)
-            .connect(State.S1, State.S2, Event.E1) { i ->
-                semaphore.tryAcquire(i)
-            }
+            .connect(State.S1, State.S2, Event.E1)
             .build()
 
-        fsm.onEvent(State.S1, Event.E1, 4)
+        fsm.onEvent(State.S1, Event.E1){
+            semaphore.tryAcquire(4)
+        }
+
         assertEquals(6, semaphore.availablePermits())
     }
 
@@ -177,36 +163,36 @@ class StateMachineTest {
         var executed = false
         val fsm = StateMachine.builder<State, Event, Boolean>()
             .initial(State.S1)
-            .connect(State.S1, State.S2, Event.E1) { signal -> executed = signal }
+            .connect(State.S1, State.S2, Event.E1)
             .build()
 
-        fsm.onEvent(State.S1, Event.E1, true)
+        fsm.onEvent(State.S1, Event.E1) { executed = true }
         assertTrue(executed)
     }
 
     @Test
     fun `test on event runs action from non suspend function reference`() = runTest {
         var executed = false
-        fun toggle(flag: Boolean) { executed = flag }
+        fun toggle() { executed = !executed }
         val fsm = StateMachine.builder<State, Event, Boolean>()
             .initial(State.S1)
-            .connect(State.S1, State.S2, Event.E1, ::toggle)
+            .connect(State.S1, State.S2, Event.E1)
             .build()
 
-        fsm.onEvent(State.S1, Event.E1, true)
+        fsm.onEvent(State.S1, Event.E1, ::toggle)
         assertTrue(executed)
     }
 
     @Test
     fun `test on event runs action from suspend function reference`() = runTest {
         var executed = false
-        suspend fun toggle(flag: Boolean) { executed = flag }
+        suspend fun toggle() { executed = !executed  }
         val fsm = StateMachine.builder<State, Event, Boolean>()
             .initial(State.S1)
-            .connect(State.S1, State.S2, Event.E1, ::toggle)
+            .connect(State.S1, State.S2, Event.E1)
             .build()
 
-        fsm.onEvent(State.S1, Event.E1, true)
+        fsm.onEvent(State.S1, Event.E1, ::toggle)
         assertTrue(executed)
     }
 
@@ -218,8 +204,8 @@ class StateMachineTest {
             .connect(State.S2, State.S1, Event.E2)
             .build()
 
-        assertEquals(Executed(State.S2), fsm.onEvent(State.S1, Event.E1, false))
-        assertEquals(Executed(State.S1), fsm.onEvent(State.S2, Event.E2, false))
+        assertEquals(Executed(State.S2), fsm.onEvent(State.S1, Event.E1))
+        assertEquals(Executed(State.S1), fsm.onEvent(State.S2, Event.E2))
     }
 
     @Test
@@ -229,7 +215,7 @@ class StateMachineTest {
             .connect(State.S1, State.S1, Event.E1)
             .build()
 
-        assertEquals(Executed(State.S1), fsm.onEvent(State.S1, Event.E1, false))
+        assertEquals(Executed(State.S1), fsm.onEvent(State.S1, Event.E1))
     }
 
     @Test
@@ -288,7 +274,7 @@ class StateMachineTest {
             .connect(State.S1, State.S2, Event.E1)
             .build()
 
-        assertEquals(Rejected, fsm.onEvent(State.S1, Event.E3, false))
+        assertEquals(Rejected, fsm.onEvent(State.S1, Event.E3))
     }
 
     @Test(expected = StackOverflowError::class)
@@ -296,10 +282,10 @@ class StateMachineTest {
         val exception = StackOverflowError("foo")
         val fsm = StateMachine.builder<State, Event, Boolean>()
             .initial(State.S1)
-            .connect(State.S1, State.S2, Event.E1) { throw exception }
+            .connect(State.S1, State.S2, Event.E1)
             .build()
 
-        fsm.onEvent(State.S1, Event.E1, false)
+        fsm.onEvent(State.S1, Event.E1) { throw exception }
     }
 }
 

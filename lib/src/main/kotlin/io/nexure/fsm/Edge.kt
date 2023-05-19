@@ -3,11 +3,10 @@ package io.nexure.fsm
 /**
  * A connection for a transition state from one state to another, with an event.
  */
-internal class Edge<S : Any, E : Any, N : Any>(
+internal class Edge<S : Any, E : Any>(
     val source: S,
     val target: S,
     val event: E,
-    val action: suspend (N) -> Unit
 ) {
     operator fun component1(): S = source
     operator fun component2(): S = target
