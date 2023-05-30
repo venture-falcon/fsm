@@ -63,8 +63,8 @@ class StateMachineTest {
             .connect('b', 'c', Event.E3)
             .build()
 
-        assertEquals(Accepted('b'), fsm.onEvent('a', Event.E2) { n += 2})
-        assertEquals(Accepted('c'), fsm.onEvent('b', Event.E3) { n += 3})
+        assertEquals(Accepted('b'), fsm.onEvent('a', Event.E2).onTransition { n += 2})
+        assertEquals(Accepted('c'), fsm.onEvent('b', Event.E3).onTransition { n += 3})
 
         assertEquals(5, n)
     }
@@ -140,7 +140,7 @@ class StateMachineTest {
             .connect(State.S1, State.S2, Event.E1)
             .build()
 
-        fsm.onEvent(State.S1, Event.E1){
+        fsm.onEvent(State.S1, Event.E1).onTransition {
             semaphore.tryAcquire(4)
         }
 
@@ -168,7 +168,7 @@ class StateMachineTest {
             .connect(State.S1, State.S2, Event.E1)
             .build()
 
-        fsm.onEvent(State.S1, Event.E1, ::toggle)
+        fsm.onEvent(State.S1, Event.E1).onTransition(::toggle)
         assertTrue(executed)
     }
 
@@ -184,7 +184,7 @@ class StateMachineTest {
             .connect(State.S1, State.S2, Event.E1)
             .build()
 
-        fsm.onEvent(State.S1, Event.E1) { toggle() }
+        fsm.onEvent(State.S1, Event.E1).onTransition { toggle() }
         assertTrue(executed)
     }
 
@@ -277,7 +277,7 @@ class StateMachineTest {
             .connect(State.S1, State.S2, Event.E1)
             .build()
 
-        fsm.onEvent(State.S1, Event.E1) { throw exception }
+        fsm.onEvent(State.S1, Event.E1).onTransition { throw exception }
     }
 }
 

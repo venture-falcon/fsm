@@ -36,7 +36,7 @@ fun callExampleStateMachine(fsm: StateMachine<PaymentState, PaymentEvent>) {
     assertEquals(Accepted(PaymentState.Pending), state1)
 
     // Transition from state PENDING into state AUTHORIZED
-    val state2 = fsm.onEvent(PaymentState.Pending, PaymentEvent.BankAuthorization) {
+    val state2 = fsm.onEvent(PaymentState.Pending, PaymentEvent.BankAuthorization).onTransition {
         // Invoke some optional action when payment was authorized
     }
     assertEquals(Accepted(PaymentState.Authorized), state2)

@@ -39,25 +39,3 @@ interface StateMachine<S : Any, E : Any> {
         fun <S : Any, E : Any> builder(): StateMachineBuilder.Uninitialized<S, E> = StateMachineBuilder()
     }
 }
-
-/**
- * Execute a transition from [state] to another state depending on [event].
- * Returns a [Transition] indicating if the transition was permitted and
- * successful or not by the state machine.
- *
- * It is recommended that the return value is checked for the desired outcome, if it is critical
- * that an event for example is accepted and not rejected.
- *
- * This extension method is just syntactic sugar for calling
- * ```kotlin
- * stateMachine.onEvent(currentState, event).onTransition { newState ->
- *     // Do something
- * }
- * ```
- */
-inline fun <S : Any, E : Any> StateMachine<S, E>.onEvent(
-    state: S,
-    event: E,
-    action: (state: S) -> Unit
-): Transition<S> = onEvent(state, event).onTransition { action(it) }
-
