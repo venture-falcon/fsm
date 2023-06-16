@@ -4,12 +4,12 @@ internal class StateMachineImpl<S : Any, E : Any>(
     private val initialState: S,
     private val transitions: List<Edge<S, E>>,
 ) : StateMachine<S, E> {
-    private val allowedTransitions: Map<S?, Set<Pair<S, E?>>> = transitions
+    private val allowedTransitions: Map<S, Set<Pair<S, E>>> = transitions
         .groupBy { it.source }
         .map { it.key to it.value.map { edge -> edge.target to edge.event }.toSet() }
         .toMap()
 
-    private val nonTerminalStates: Set<S> = allowedTransitions.keys.filterNotNull().toSet()
+    private val nonTerminalStates: Set<S> = allowedTransitions.keys
 
     override fun states(): Set<S> = transitions.asSequence()
         .map { listOf(it.source, it.target) }
@@ -29,7 +29,7 @@ internal class StateMachineImpl<S : Any, E : Any>(
     }
 
     private fun nextState(source: S, event: E): S? {
-        val targets: Set<Pair<S, E?>> = allowedTransitions.getOrDefault(source, emptySet())
+        val targets: Set<Pair<S, E>> = allowedTransitions.getOrDefault(source, emptySet())
         return targets.firstOrNull { it.second == event }?.first
     }
 }
