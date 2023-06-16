@@ -279,6 +279,30 @@ class StateMachineTest {
 
         fsm.onEvent(State.S1, Event.E1).onTransition { throw exception }
     }
+
+    @Test
+    fun `test acceptedEvents on non-terminal state`() {
+        val fsm = StateMachine.builder<State, Event>()
+            .initial(State.S1)
+            .connect(State.S1, State.S2, Event.E1)
+            .connect(State.S1, State.S3, Event.E2)
+            .connect(State.S3, State.S4, Event.E3)
+            .build()
+
+        assertEquals(listOf(Event.E1, Event.E2), fsm.acceptedEvents(State.S1))
+    }
+
+    @Test
+    fun `test acceptedEvents on terminal state`() {
+        val fsm = StateMachine.builder<State, Event>()
+            .initial(State.S1)
+            .connect(State.S1, State.S2, Event.E1)
+            .connect(State.S1, State.S3, Event.E2)
+            .connect(State.S3, State.S4, Event.E3)
+            .build()
+
+        assertEquals(emptyList<Event>(), fsm.acceptedEvents(State.S4))
+    }
 }
 
 private enum class State {

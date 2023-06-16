@@ -35,6 +35,12 @@ interface StateMachine<S : Any, E : Any> {
      */
     fun onEvent(state: S, event: E): Transition<S>
 
+    /**
+     * Return a list of events that are accepted by the state machine in the given state. The returned list will be an
+     * empty list if the state is a terminal state.
+     */
+    fun acceptedEvents(state: S): List<E>
+
     companion object {
         fun <S : Any, E : Any> builder(): StateMachineBuilder.Uninitialized<S, E> = StateMachineBuilder()
     }
