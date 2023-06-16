@@ -289,11 +289,11 @@ class StateMachineTest {
             .connect(State.S3, State.S4, Event.E3)
             .build()
 
-        assertEquals(listOf(Event.E1, Event.E2), fsm.acceptedEvents(State.S1))
+        assertEquals(setOf(Event.E1, Event.E2), fsm.acceptedEvents(State.S1))
     }
 
     @Test
-    fun `test acceptedEvents on terminal state`() {
+    fun `test acceptedEvents is empty on terminal state`() {
         val fsm = StateMachine.builder<State, Event>()
             .initial(State.S1)
             .connect(State.S1, State.S2, Event.E1)
@@ -301,7 +301,7 @@ class StateMachineTest {
             .connect(State.S3, State.S4, Event.E3)
             .build()
 
-        assertEquals(emptyList<Event>(), fsm.acceptedEvents(State.S4))
+        assertEquals(emptySet<Event>(), fsm.acceptedEvents(State.S4))
     }
 }
 

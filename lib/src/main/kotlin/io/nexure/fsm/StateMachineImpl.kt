@@ -28,8 +28,8 @@ internal class StateMachineImpl<S : Any, E : Any>(
         return Accepted(next)
     }
 
-    override fun acceptedEvents(state: S): List<E> =
-        allowedTransitions.getOrDefault(state, emptySet()).map { it.second }
+    override fun acceptedEvents(state: S): Set<E> =
+        allowedTransitions.getOrDefault(state, emptySet()).map { it.second }.toSet()
 
     private fun nextState(source: S, event: E): S? {
         val targets: Set<Pair<S, E>> = allowedTransitions.getOrDefault(source, emptySet())

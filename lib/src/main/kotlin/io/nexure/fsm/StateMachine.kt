@@ -39,7 +39,7 @@ interface StateMachine<S : Any, E : Any> {
      * Return a list of events that are accepted by the state machine in the given state. The returned list will be an
      * empty list if the state is a terminal state.
      */
-    fun acceptedEvents(state: S): List<E>
+    fun acceptedEvents(state: S): Set<E>
 
     companion object {
         fun <S : Any, E : Any> builder(): StateMachineBuilder.Uninitialized<S, E> = StateMachineBuilder()
