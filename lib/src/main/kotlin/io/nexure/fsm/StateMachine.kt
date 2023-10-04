@@ -3,9 +3,8 @@ package io.nexure.fsm
 /**
  * S = State
  * E = Event triggering a transition between two states
- * N = Signal, data associated with a state change
  */
-interface StateMachine<S : Any, E : Any, N : Any> {
+interface StateMachine<S : Any, E : Any> {
     /**
      * Return all the possible states of the state machine
      */
@@ -28,16 +27,21 @@ interface StateMachine<S : Any, E : Any, N : Any> {
 
     /**
      * Execute a transition from [state] to another state depending on [event].
-     * If an action is associated with the state transition, it will then be executed,
-     * with [signal] as input. Returns a [Transition] indicating if the transition was permitted and
-     * successful or not.
+     * Returns a [Transition] indicating if the transition was permitted and
+     * successful or not by the state machine.
      *
      * It is recommended that the return value is checked for the desired outcome, if it is critical
      * that an event for example is accepted and not rejected.
      */
-    fun onEvent(state: S, event: E, signal: N): Transition<S>
+    fun onEvent(state: S, event: E): Transition<S>
+
+    /**
+     * Return a list of events that are accepted by the state machine in the given state. The returned list will be an
+     * empty list if the state is a terminal state.
+     */
+    fun acceptedEvents(state: S): Set<E>
 
     companion object {
-        fun <S : Any, E : Any, N : Any> builder(): StateMachineBuilder<S, E, N> = StateMachineBuilder()
+        fun <S : Any, E : Any> builder(): StateMachineBuilder.Uninitialized<S, E> = StateMachineBuilder()
     }
 }
