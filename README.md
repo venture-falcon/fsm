@@ -10,7 +10,7 @@ First **make sure to register this Git repository as a Maven repository**. Check
 
 Then include the dependency in your build.gradle(.kts) file.
 ```kotlin
-implementation("io.nexure:fsm:2.0.0")
+implementation("io.nexure:fsm:3.0.0")
 ```
 
  ## Usage
