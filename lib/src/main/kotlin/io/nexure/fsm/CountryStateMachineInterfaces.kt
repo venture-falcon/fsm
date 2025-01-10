@@ -6,6 +6,7 @@ interface CountryStateMachineConfig<S : Any, E : Any> {
     val country: CountryCode
     val enabled: Boolean
     val transitions: List<CountryEdge<S, E>>
+    val initialState: S
 }
 
 interface CountryEdge<S : Any, E : Any> {
