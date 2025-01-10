@@ -17,5 +17,4 @@ interface CountryEdge<S : Any, E : Any> {
 
 interface CountryStateMachineFactory<S : Any, E : Any, C : CountryStateMachineConfig<S, E>> {
     suspend fun createFsmForAllCountries(): MutableMap<CountryCode, StateMachine<S, E>>
-    fun createStateMachineForCountry(transitions: List<CountryEdge<S, E>>): StateMachine<S, E>?
 }
