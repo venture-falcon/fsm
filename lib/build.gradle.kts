@@ -33,6 +33,10 @@ dependencies {
 
     // Use the Kotlin JUnit integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
+
+    constraints {
+        testImplementation("junit:junit:4.13.2")
+    }
 }
 
 publishing {
